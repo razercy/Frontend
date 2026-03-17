@@ -2,6 +2,7 @@
 import streamlit as st
 from components.sidebar import sidebar
 from components.charts import patient_line_chart, appointment_donut_chart
+from views.module_e2 import module_e2_detail
 
 # All categories and their modules
 CATEGORIES = {
@@ -360,7 +361,12 @@ def show_category_view():
 def show_module_detail():
     code, name, desc, tables, records = st.session_state.selected_module
     cat_key = st.session_state.selected_category
-    
+
+    # Module 26: E2 — Emergency Room Patient Alert System
+    if code == "E2":
+        module_e2_detail()
+        return
+
     # Breadcrumb
     st.markdown(f"Category {cat_key.split('-')[0].strip()} > {name}")
     st.markdown(f"# {name}")
