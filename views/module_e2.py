@@ -27,7 +27,7 @@ def module_e2_detail():
 
     tab = st.radio(
         "",
-        ["🏠 Home", "🔗 ER Diagram", "📋 Collections", "🔍 Query", "⚡ Triggers", "📊 Output"],
+        ["🏠 Home", "🔗 ER Diagram", "�️ DFD", "�📋 Collections", "🔍 Query", "⚡ Triggers", "📊 Output"],
         horizontal=True,
         key="e2_tabs",
     )
@@ -37,6 +37,8 @@ def module_e2_detail():
         _home_tab()
     elif tab == "🔗 ER Diagram":
         _er_diagram_tab()
+    elif tab == "🗺️ DFD":
+        _dfd_tab()
     elif tab == "📋 Collections":
         _collections_tab()
     elif tab == "🔍 Query":
@@ -128,23 +130,15 @@ def _home_tab():
 # ─────────────────────────────────────────────
 def _er_diagram_tab():
     st.markdown("### Entity Relationship Diagram")
-    st.markdown(
-        "Defined in `entity-relationship-diagram.md`. "
-        "Rendered below using Mermaid."
-    )
+    st.caption("Source: `entity-relationship-diagram.md`")
 
-    # Mermaid diagram — exact structure from entity-relationship-diagram.md
+    # Exact mermaid from entity-relationship-diagram.md
     st.markdown("""
 ```mermaid
 erDiagram
 
-    PATIENT {
-        int PatientID PK
-    }
-
     ER_VISIT {
         int VisitID PK
-        int PatientID FK
         int LogID FK
         int AlertID FK
         int TriageID FK
@@ -175,28 +169,147 @@ erDiagram
         string Type
     }
 
-    PATIENT ||--o{ ER_VISIT : has
-    WAIT_TIME_LOG ||--o{ ER_VISIT : tracks
-    ER_VISIT ||--o{ ALERT : triggers
-    ER_VISIT ||--|| TRIAGE : has
-    ER_VISIT }o--o{ RESOURCE : utilizes
+    WAIT_TIME_LOG ||--o{ ER_VISIT : Tracks
+    ER_VISIT ||--o{ ALERT : Triggers
+    ER_VISIT ||--|| TRIAGE : Has
+    ER_VISIT }o--o{ RESOURCE : Utilizes
 ```
 """)
 
     st.divider()
     st.markdown("### Relationship Summary")
     st.table({
-        "From": ["PATIENT", "WAIT_TIME_LOG", "ER_VISIT", "ER_VISIT", "ER_VISIT"],
-        "To": ["ER_VISIT", "ER_VISIT", "ALERT", "TRIAGE", "RESOURCE"],
-        "Cardinality": ["1 to many", "1 to many", "1 to many", "1 to 1", "many to many"],
+        "From":        ["WAIT_TIME_LOG", "ER_VISIT", "ER_VISIT", "ER_VISIT"],
+        "To":          ["ER_VISIT",      "ALERT",    "TRIAGE",   "RESOURCE"],
+        "Cardinality": ["1 to many",     "1 to many","1 to 1",   "many to many"],
+        "Label":       ["Tracks",        "Triggers", "Has",      "Utilizes"],
         "Description": [
-            "A patient can have multiple ER visits",
-            "A wait-time log tracks multiple ER visit stages",
-            "A visit can trigger multiple alerts",
-            "Each visit has exactly one triage assessment",
-            "A visit utilizes one or more resources",
+            "One wait-time log tracks many ER visit stage records",
+            "One ER visit can trigger multiple alerts",
+            "Each ER visit has exactly one triage assessment",
+            "An ER visit can utilize multiple resources; a resource can serve multiple visits",
         ],
     })
+
+
+
+# ─────────────────────────────────────────────
+# DFD LEVEL-2  (from backend_flow_diagram.dot)
+# ─────────────────────────────────────────────
+def _dfd_tab():
+    st.markdown("### Data Flow Diagram — Level 2")
+    st.caption("Source: `backend_flow_diagram.dot`")
+
+    st.markdown("""
+**External Entities** feed into five processes that read/write three data stores,
+then deliver outputs back to ER Staff / Doctor and to downstream modules.
+""")
+
+    # ── Process descriptions ──────────────────
+    st.markdown("#### Processes")
+    st.table({
+        "Process ID": ["2.6.1", "2.6.2", "2.6.3", "2.6.4", "2.6.5"],
+        "Name": [
+            "Validate ER Visit Data",
+            "Calculate Triage Score (ESI/CTAS)",
+            "Generate Time-Sensitive Alerts",
+            "Optimize Resource Allocation",
+            "Generate Throughput Reports",
+        ],
+        "Input": [
+            "Vital Signs (M25), Patient Entry (User)",
+            "Patient Profile (D1), Scoring Metrics (D2)",
+            "Triage Status (D1)",
+            "Wait Times (D1), Availability (D3)",
+            "Visit History (D1)",
+        ],
+        "Output": [
+            "Validated Record → D1",
+            "Assigned Triage → D1",
+            "Alert Trigger → M29, Transfer Notification → M27",
+            "Allocation Suggestions → User",
+            "Throughput Reports → User",
+        ],
+    })
+
+    st.divider()
+
+    # ── Data stores ───────────────────────────
+    st.markdown("#### Data Stores")
+    st.table({
+        "Store ID": ["D1", "D2", "D3"],
+        "Name":     ["ER_Visit_DB", "Triage_Rules_DB", "Resource_Logs"],
+        "MongoDB Collection": ["er_visits + alerts + wait_time_logs", "triages", "resources"],
+        "Description": [
+            "Primary store: visits, alerts, wait-time stages",
+            "Triage scoring rules and thresholds (ESI/CTAS/MTS)",
+            "Bed, staff, equipment availability logs",
+        ],
+    })
+
+    st.divider()
+
+    # ── External entities & inter-module flows ─
+    st.markdown("#### External Entities & Inter-Module Data Flows")
+    st.table({
+        "Entity":    ["M25: ICU Vital Signs", "M27: Cardiac ICU", "M29: Threshold Alerts", "ER Staff / Doctor"],
+        "Direction": ["→ Module 26", "← Module 26", "← Module 26", "↔ Module 26"],
+        "Data":      [
+            "Vital Signs Data → P26.1",
+            "Transfer Notification from P26.3",
+            "Alert Trigger from P26.3",
+            "Patient Entry → P26.1 | Allocation Suggestions ← P26.4 | Reports ← P26.5",
+        ],
+    })
+
+    st.divider()
+
+    # ── Raw DOT source ────────────────────────
+    with st.expander("View raw DOT source (`backend_flow_diagram.dot`)"):
+        st.code("""digraph DFD_Level2_Module26 {
+    rankdir=LR;
+    node [shape=rectangle, style=filled, fillcolor=lightblue];
+
+    subgraph cluster_external {
+        label = "External Entities / Modules";
+        style=dashed;
+        M25  [label="M25: ICU Vital Signs",  fillcolor=lightgrey];
+        M27  [label="M27: Cardiac ICU",       fillcolor=lightgrey];
+        M29  [label="M29: Threshold Alerts",  fillcolor=lightgrey];
+        User [label="ER Staff / Doctor", shape=box, fillcolor=yellow];
+    }
+
+    node [shape=circle, fillcolor=white];
+    P26_1 [label="2.6.1\\nValidate ER\\nVisit Data"];
+    P26_2 [label="2.6.2\\nCalculate\\nTriage Score\\n(ESI/CTAS)"];
+    P26_3 [label="2.6.3\\nGenerate\\nTime-Sensitive\\nAlerts"];
+    P26_4 [label="2.6.4\\nOptimize\\nResource\\nAllocation"];
+    P26_5 [label="2.6.5\\nGenerate\\nThroughput\\nReports"];
+
+    node [shape=cylinder, fillcolor=lightyellow];
+    DS_ER       [label="D1: ER_Visit_DB"];
+    DS_Triage   [label="D2: Triage_Rules_DB"];
+    DS_Resource [label="D3: Resource_Logs"];
+
+    M25  -> P26_1 [label="Vital Signs Data"];
+    User -> P26_1 [label="Patient Entry"];
+    P26_1 -> DS_ER [label="Validated Record"];
+
+    DS_ER     -> P26_2 [label="Patient Profile"];
+    DS_Triage -> P26_2 [label="Scoring Metrics"];
+    P26_2 -> DS_ER [label="Assigned Triage"];
+
+    DS_ER -> P26_3 [label="Triage Status"];
+    P26_3 -> M29  [label="Alert Trigger"];
+    P26_3 -> M27  [label="Transfer Notification"];
+
+    DS_ER       -> P26_4 [label="Wait Times"];
+    DS_Resource -> P26_4 [label="Availability"];
+    P26_4 -> User [label="Allocation Suggestions"];
+
+    DS_ER -> P26_5 [label="Visit History"];
+    P26_5 -> User  [label="Throughput Reports"];
+}""", language="dot")
 
 
 # ─────────────────────────────────────────────
@@ -204,81 +317,73 @@ erDiagram
 # ─────────────────────────────────────────────
 def _collections_tab():
     st.markdown("### MongoDB Collections  —  `module26_er`")
+    st.caption("One collection per entity defined in `entity-relationship-diagram.md`.")
     st.table({
-        "Collection": ["patients", "er_visits", "wait_time_logs", "alerts", "triages", "resources"],
-        "Maps to Entity": ["PATIENT", "ER_VISIT", "WAIT_TIME_LOG", "ALERT", "TRIAGE", "RESOURCE"],
-        "Key Field": ["PatientID", "VisitID", "LogID", "AlertID", "TriageID", "ResourceID"],
+        "Collection":     ["er_visits", "wait_time_logs", "alerts", "triages", "resources"],
+        "Maps to Entity": ["ER_VISIT",  "WAIT_TIME_LOG",  "ALERT",  "TRIAGE",  "RESOURCE"],
+        "Primary Key":    ["VisitID",   "LogID",          "AlertID","TriageID","ResourceID"],
     })
 
     st.divider()
     st.markdown("#### Document Schemas")
 
-    with st.expander("patients"):
+    with st.expander("er_visits  (ER_VISIT)"):
         st.code("""{
-  "PatientID": 1001,          // int, unique
-  "name": "[Patient Name]",
-  "age": 34,
-  "gender": "M"
+  "VisitID":        5001,                       // int PK
+  "LogID":          3001,                       // ref → wait_time_logs
+  "AlertID":        4001,                       // ref → alerts (null if none)
+  "TriageID":       2001,                       // ref → triages
+  "ResourceID":     6001,                       // ref → resources (null if unassigned)
+  "ArrivalTime":    "2026-03-18T09:42:00Z",
+  "chief_complaint":"Chest pain",
+  "status":         "in_treatment",             // waiting|in_triage|in_treatment|boarding|complete
+  "assigned_bed":   "ER-06",
+  "disposition":    null                        // discharged|admitted|transferred|left_ama
 }""", language="json")
 
-    with st.expander("er_visits"):
+    with st.expander("wait_time_logs  (WAIT_TIME_LOG)"):
         st.code("""{
-  "VisitID": 5001,            // int, unique
-  "PatientID": 1001,          // ref → patients
-  "LogID": 3001,              // ref → wait_time_logs
-  "AlertID": 4001,            // ref → alerts
-  "TriageID": 2001,           // ref → triages
-  "ResourceID": 6001,         // ref → resources
-  "ArrivalTime": "2026-03-18T09:42:00Z",
-  "chief_complaint": "Chest pain",
-  "status": "in_treatment",
-  "assigned_bed": "ER-06",
-  "disposition": null
+  "LogID":    3001,               // int PK
+  "VisitID":  5001,               // ref → er_visits
+  "Stage":    "door_to_doctor",   // door_to_doctor | door_to_disposition | los
+  "Duration": 18                  // minutes (null until stage completes)
 }""", language="json")
 
-    with st.expander("triages"):
+    with st.expander("alerts  (ALERT)"):
         st.code("""{
-  "TriageID": 2001,           // int, unique
-  "VisitID": 5001,            // ref → er_visits
-  "Score": 2,                 // 1–5
-  "System": "ESI",            // ESI | CTAS | MTS
-  "pain_score": 8,
+  "AlertID":     4001,                              // int PK
+  "VisitID":     5001,                              // ref → er_visits
+  "Type":        "ESI Level 2 — Immediate attention",
+  "Status":      "active",                          // active | resolved
+  "severity":    "warning",                         // critical | warning | info
+  "triggered_at":"2026-03-18T09:55:00Z",
+  "resolved_at": null,
+  "escalated":   false
+}""", language="json")
+
+    with st.expander("triages  (TRIAGE)"):
+        st.code("""{
+  "TriageID":    2001,        // int PK
+  "VisitID":     5001,        // ref → er_visits
+  "Score":       2,           // 1–5 (1 = most urgent)
+  "System":      "ESI",       // ESI | CTAS | MTS
+  "pain_score":  8,
   "bp_systolic": 158,
-  "bp_diastolic": 96,
-  "heart_rate": 112,
-  "spo2": 94.0,
+  "bp_diastolic":96,
+  "heart_rate":  112,
+  "spo2":        94.0,
   "temperature": 37.8,
-  "resp_rate": 22,
+  "resp_rate":   22,
   "assessed_at": "2026-03-18T09:50:00Z"
 }""", language="json")
 
-    with st.expander("alerts"):
+    with st.expander("resources  (RESOURCE)"):
         st.code("""{
-  "AlertID": 4001,            // int, unique
-  "VisitID": 5001,            // ref → er_visits
-  "Type": "SpO2 critically low",
-  "Status": "active",         // active | resolved
-  "severity": "critical",     // critical | warning | info
-  "triggered_at": "2026-03-18T09:55:00Z",
-  "resolved_at": null,
-  "escalated": false
-}""", language="json")
-
-    with st.expander("wait_time_logs"):
-        st.code("""{
-  "LogID": 3001,              // int, unique
-  "VisitID": 5001,            // ref → er_visits
-  "Stage": "door_to_doctor",  // door_to_doctor | door_to_disposition | los
-  "Duration": 18              // minutes
-}""", language="json")
-
-    with st.expander("resources"):
-        st.code("""{
-  "ResourceID": 6001,         // int, unique
-  "Type": "bed",              // bed | doctor | nurse | ventilator | monitor
-  "location": "ER-Wing-A",
-  "total_units": 48,
-  "occupied_units": 43
+  "ResourceID":    6001,       // int PK
+  "Type":          "bed",      // bed | doctor | nurse | ventilator | monitor
+  "location":      "ER-Wing-A",
+  "total_units":   48,
+  "occupied_units":43
 }""", language="json")
 
     st.divider()
@@ -287,7 +392,7 @@ def _collections_tab():
 
 
 def _show_live_counts():
-    collections = ["patients", "er_visits", "wait_time_logs", "alerts", "triages", "resources"]
+    collections = ["er_visits", "wait_time_logs", "alerts", "triages", "resources"]
     counts = {}
     try:
         for c in collections:
