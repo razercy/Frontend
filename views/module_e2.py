@@ -27,7 +27,7 @@ def module_e2_detail():
 
     tab = st.radio(
         "",
-        ["🏠 Home", "🔗 ER Diagram", "�️ DFD", "�📋 Collections", "🔍 Query", "⚡ Triggers", "📊 Output"],
+        ["🏠 Home", "🔗 ER Diagram", "🗺️ DFD", "📋 Collections", "🔍 Query", "⚡ Triggers", "🔌 API", "📊 Output"],
         horizontal=True,
         key="e2_tabs",
     )
@@ -45,6 +45,8 @@ def module_e2_detail():
         _query_tab()
     elif tab == "⚡ Triggers":
         _triggers_tab()
+    elif tab == "🔌 API":
+        _api_tab()
     elif tab == "📊 Output":
         _output_tab()
 
@@ -680,6 +682,90 @@ def escalate_stale_alerts():
         {"$set": {"escalated": True}},
     )
 """, language="python")
+
+
+# ─────────────────────────────────────────────
+# API REFERENCE
+# ─────────────────────────────────────────────
+def _api_tab():
+    st.markdown("### REST API — Module 26")
+    st.info(
+        "Run the API with: `uvicorn api.main:app --reload`  \n"
+        "Interactive docs: **http://localhost:8000/docs**"
+    )
+
+    endpoints = [
+        # P26.1
+        ("POST",   "/api/module26/visits",                    "P26.1", "Register a new ER visit (validate + persist)"),
+        ("GET",    "/api/module26/visits",                    "P26.1", "List ER visits (optional ?status= filter)"),
+        ("GET",    "/api/module26/visits/{visit_id}",         "P26.1", "Get a single ER visit"),
+        ("PUT",    "/api/module26/visits/{visit_id}",         "P26.1", "Update visit status / bed / disposition"),
+        # P26.2
+        ("POST",   "/api/module26/triage",                    "P26.2", "Assign ESI/CTAS/MTS triage score"),
+        ("GET",    "/api/module26/triage/queue",              "P26.2", "Priority-sorted active triage queue"),
+        # P26.3
+        ("GET",    "/api/module26/alerts",                    "P26.3", "List active alerts (optional ?severity=)"),
+        ("PUT",    "/api/module26/alerts/{alert_id}/resolve", "P26.3", "Resolve an alert"),
+        ("POST",   "/api/module26/alerts/escalate",           "P26.3", "Escalate stale critical alerts (cron)"),
+        # P26.4
+        ("GET",    "/api/module26/resources",                 "P26.4", "Resource utilisation + status"),
+        ("PUT",    "/api/module26/resources/{resource_id}",   "P26.4", "Update occupied units"),
+        ("GET",    "/api/module26/resources/crowding",        "P26.4", "NEDOCS crowding index"),
+        # P26.5
+        ("GET",    "/api/module26/reports/throughput",        "P26.5", "Hourly throughput report (today)"),
+        ("GET",    "/api/module26/reports/wait-times/{id}",   "P26.5", "Wait-time stages for a visit"),
+        # Inter-module
+        ("POST",   "/api/module26/intake/m25-vitals",         "M25→26", "Receive vital signs from Module 25"),
+        ("GET",    "/api/module26/export/m27-transfer",       "26→M27", "Critical alerts for Module 27 (Cardiac ICU)"),
+        ("GET",    "/api/module26/export/m29-alerts",         "26→M29", "All active alerts for Module 29 (Threshold Alerts)"),
+    ]
+
+    st.table({
+        "Method":      [e[0] for e in endpoints],
+        "Endpoint":    [e[1] for e in endpoints],
+        "DFD Process": [e[2] for e in endpoints],
+        "Description": [e[3] for e in endpoints],
+    })
+
+    st.divider()
+    st.markdown("#### Example: Register ER Visit")
+    st.code("""
+curl -X POST http://localhost:8000/api/module26/visits \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "patient_id": 1001,
+    "chief_complaint": "Chest pain with shortness of breath",
+    "heart_rate": 118,
+    "spo2": 91.5
+  }'
+""", language="bash")
+
+    st.markdown("#### Example: Assign Triage")
+    st.code("""
+curl -X POST http://localhost:8000/api/module26/triage \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "visit_id": 5001,
+    "system": "ESI",
+    "score": 2,
+    "pain_score": 8,
+    "bp_systolic": 158,
+    "heart_rate": 118,
+    "spo2": 91.5
+  }'
+""", language="bash")
+
+    st.markdown("#### Example: Receive Vitals from M25")
+    st.code("""
+curl -X POST http://localhost:8000/api/module26/intake/m25-vitals \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "patient_id": 1001,
+    "heart_rate": 145,
+    "spo2": 87.0,
+    "bp_systolic": 185
+  }'
+""", language="bash")
 
 
 # ─────────────────────────────────────────────
