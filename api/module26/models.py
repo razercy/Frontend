@@ -1,6 +1,6 @@
 """
 Pydantic models for Module 26 — Emergency Room Patient Alert System
-Entities: ERVisit, Triage, Alert, Resource, WaitTimeLog
+Entities: ERVisit, Triage, Alert, Resource, WaitTimeLog, VisitResource
 """
 from __future__ import annotations
 from datetime import datetime
@@ -53,7 +53,6 @@ class ERVisitOut(BaseModel):
     status: str
     assigned_bed: Optional[str]
     triage_id: Optional[int]
-    alert_id: Optional[int]
     disposition: Optional[str]
 
 
@@ -108,6 +107,11 @@ class WaitTimeOut(BaseModel):
     visit_id: int
     stage: str
     duration_min: Optional[int]
+
+
+class VisitResourceOut(BaseModel):
+    visit_id: int
+    resource_id: int
 
 
 # ── Reports ──────────────────────────────────────────────────────────────────

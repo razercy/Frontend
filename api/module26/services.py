@@ -41,9 +41,7 @@ def create_er_visit(data: dict) -> dict:
         "status":          "waiting",
         "assigned_bed":    data.get("assigned_bed"),
         "TriageID":        None,
-        "AlertID":         None,
         "LogID":           log_id,
-        "ResourceID":      None,
         "disposition":     None,
         "departure_time":  None,
     }
@@ -182,7 +180,6 @@ def _create_triage_alert(visit_id: int, score: int, system: str) -> dict:
         "escalated":    False,
     }
     _col("alerts").insert_one(doc)
-    _col("er_visits").update_one({"VisitID": visit_id}, {"$set": {"AlertID": alert_id}})
     doc.pop("_id", None)
     return doc
 

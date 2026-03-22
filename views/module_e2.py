@@ -75,6 +75,7 @@ def _home_tab():
         st.success("4️⃣ ALERT — type, status, trigger time")
         st.success("5️⃣ RESOURCE — type, availability")
         st.success("6️⃣ WAIT_TIME_LOG — stage, duration")
+        st.success("7️⃣ VISIT_RESOURCE — visit-resource mapping")
 
     with col2:
         st.markdown("### Output Entities")
@@ -139,12 +140,15 @@ def _er_diagram_tab():
 ```mermaid
 erDiagram
 
+    PATIENT {
+        int PatientID PK
+    }
+
     ER_VISIT {
         int VisitID PK
+        int PatientID FK
         int LogID FK
-        int AlertID FK
         int TriageID FK
-        int ResourceID FK
         datetime ArrivalTime
     }
 
@@ -156,6 +160,7 @@ erDiagram
 
     ALERT {
         int AlertID PK
+        int VisitID FK
         string Type
         string Status
     }
@@ -171,25 +176,34 @@ erDiagram
         string Type
     }
 
-    WAIT_TIME_LOG ||--o{ ER_VISIT : Tracks
-    ER_VISIT ||--o{ ALERT : Triggers
-    ER_VISIT ||--|| TRIAGE : Has
-    ER_VISIT }o--o{ RESOURCE : Utilizes
+    VISIT_RESOURCE {
+        int VisitID PK, FK
+        int ResourceID PK, FK
+    }
+
+    PATIENT ||--o{ ER_VISIT : has
+    WAIT_TIME_LOG ||--o{ ER_VISIT : tracks
+    ER_VISIT ||--|| TRIAGE : has
+    ER_VISIT ||--o{ ALERT : triggers
+    ER_VISIT ||--o{ VISIT_RESOURCE : uses
+    RESOURCE ||--o{ VISIT_RESOURCE : included_in
 ```
 """)
 
     st.divider()
     st.markdown("### Relationship Summary")
     st.table({
-        "From":        ["WAIT_TIME_LOG", "ER_VISIT", "ER_VISIT", "ER_VISIT"],
-        "To":          ["ER_VISIT",      "ALERT",    "TRIAGE",   "RESOURCE"],
-        "Cardinality": ["1 to many",     "1 to many","1 to 1",   "many to many"],
-        "Label":       ["Tracks",        "Triggers", "Has",      "Utilizes"],
+        "From":        ["PATIENT", "WAIT_TIME_LOG", "ER_VISIT", "ER_VISIT", "ER_VISIT", "RESOURCE"],
+        "To":          ["ER_VISIT", "ER_VISIT", "TRIAGE", "ALERT", "VISIT_RESOURCE", "VISIT_RESOURCE"],
+        "Cardinality": ["1 to many", "1 to many", "1 to 1", "1 to many", "1 to many", "1 to many"],
+        "Label":       ["Has", "Tracks", "Has", "Triggers", "Uses", "Included_In"],
         "Description": [
+            "One patient can have multiple ER visits",
             "One wait-time log tracks many ER visit stage records",
-            "One ER visit can trigger multiple alerts",
             "Each ER visit has exactly one triage assessment",
-            "An ER visit can utilize multiple resources; a resource can serve multiple visits",
+            "One ER visit can trigger multiple alerts",
+            "One ER visit can have multiple visit-resource links",
+            "One resource can appear in multiple visit-resource links",
         ],
     })
 
@@ -241,11 +255,11 @@ then deliver outputs back to ER Staff / Doctor and to downstream modules.
     st.table({
         "Store ID": ["D1", "D2", "D3"],
         "Name":     ["ER_Visit_DB", "Triage_Rules_DB", "Resource_Logs"],
-        "MongoDB Collection": ["er_visits + alerts + wait_time_logs", "triages", "resources"],
+        "MongoDB Collection": ["er_visits + alerts + wait_time_logs", "triages", "resources + visit_resources"],
         "Description": [
             "Primary store: visits, alerts, wait-time stages",
             "Triage scoring rules and thresholds (ESI/CTAS/MTS)",
-            "Bed, staff, equipment availability logs",
+            "Bed, staff, equipment availability logs and visit-resource links",
         ],
     })
 
@@ -321,9 +335,9 @@ def _collections_tab():
     st.markdown("### MongoDB Collections  —  `module26_er`")
     st.caption("One collection per entity defined in `entity-relationship-diagram.md`.")
     st.table({
-        "Collection":     ["er_visits", "wait_time_logs", "alerts", "triages", "resources"],
-        "Maps to Entity": ["ER_VISIT",  "WAIT_TIME_LOG",  "ALERT",  "TRIAGE",  "RESOURCE"],
-        "Primary Key":    ["VisitID",   "LogID",          "AlertID","TriageID","ResourceID"],
+        "Collection":     ["er_visits", "wait_time_logs", "alerts", "triages", "resources", "visit_resources"],
+        "Maps to Entity": ["ER_VISIT",  "WAIT_TIME_LOG",  "ALERT",  "TRIAGE",  "RESOURCE",  "VISIT_RESOURCE"],
+        "Primary Key":    ["VisitID",   "LogID",          "AlertID", "TriageID", "ResourceID", "VisitID + ResourceID"],
     })
 
     st.divider()
@@ -332,10 +346,9 @@ def _collections_tab():
     with st.expander("er_visits  (ER_VISIT)"):
         st.code("""{
   "VisitID":        5001,                       // int PK
+    "PatientID":      1001,                       // ref -> PATIENT
   "LogID":          3001,                       // ref → wait_time_logs
-  "AlertID":        4001,                       // ref → alerts (null if none)
   "TriageID":       2001,                       // ref → triages
-  "ResourceID":     6001,                       // ref → resources (null if unassigned)
   "ArrivalTime":    "2026-03-18T09:42:00Z",
   "chief_complaint":"Chest pain",
   "status":         "in_treatment",             // waiting|in_triage|in_treatment|boarding|complete
@@ -361,6 +374,13 @@ def _collections_tab():
   "triggered_at":"2026-03-18T09:55:00Z",
   "resolved_at": null,
   "escalated":   false
+}""", language="json")
+
+        with st.expander("visit_resources  (VISIT_RESOURCE)"):
+                st.code("""{
+    "VisitID":     5001,        // composite PK, FK -> er_visits
+    "ResourceID":  6001,        // composite PK, FK -> resources
+    "assigned_at": "2026-03-18T09:58:00Z"
 }""", language="json")
 
     with st.expander("triages  (TRIAGE)"):
@@ -394,7 +414,7 @@ def _collections_tab():
 
 
 def _show_live_counts():
-    collections = ["er_visits", "wait_time_logs", "alerts", "triages", "resources"]
+    collections = ["er_visits", "wait_time_logs", "alerts", "triages", "resources", "visit_resources"]
     counts = {}
     try:
         for c in collections:
