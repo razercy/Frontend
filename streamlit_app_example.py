@@ -1,7 +1,14 @@
 import streamlit as st
-from db import collection
+from db import get_collection
 
 st.title("MongoDB + Streamlit Demo")
+
+try:
+    collection = get_collection("users", db_name="mydatabase")
+except Exception as exc:
+    st.error(f"Database is not configured: {exc}")
+    st.info("Set MONGO_URI in Streamlit secrets before using this demo.")
+    st.stop()
 
 name = st.text_input("Enter Name")
 

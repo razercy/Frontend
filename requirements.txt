@@ -1,8 +1,9 @@
-streamlit
-streamlit-option-menu
-matplotlib
-pymongo[srv]
-fastapi
-uvicorn[standard]
-pydantic
-python-dotenv
+streamlit>=1.42.0,<2.0.0
+streamlit-option-menu>=0.4.0,<1.0.0
+matplotlib>=3.8.0,<4.0.0
+pymongo[srv]>=4.6.0,<5.0.0
+dnspython>=2.6.0,<3.0.0
+fastapi>=0.115.0,<1.0.0
+uvicorn[standard]>=0.30.0,<1.0.0
+pydantic>=2.8.0,<3.0.0
+python-dotenv>=1.0.0,<2.0.0
