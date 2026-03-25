@@ -17,6 +17,74 @@ def _col(name):
     return get_collection(name)
 
 
+DEFAULT_EXTERNAL_INPUTS = {
+    "M25_vital_signs": {
+        "patient_id": 1001,
+        "heart_rate": 145,
+        "spo2": 87.0,
+        "bp_systolic": 185,
+        "bp_diastolic": 102,
+        "temperature": 39.8,
+        "resp_rate": 32,
+    },
+    "ER_patient_entry": {
+        "patient_id": 1001,
+        "chief_complaint": "Chest pain with shortness of breath",
+        "arrival_mode": "Walk-in",
+    },
+}
+
+DEFAULT_ER_VISITS = [
+    {
+        "VisitID": 5003,
+        "chief_complaint": "High fever and confusion",
+        "status": "in_treatment",
+        "assigned_bed": "ER-09",
+        "ArrivalTime": "2026-03-25T08:45:00Z",
+    },
+    {
+        "VisitID": 5002,
+        "chief_complaint": "Road traffic accident",
+        "status": "in_triage",
+        "assigned_bed": "ER-03",
+        "ArrivalTime": "2026-03-25T08:21:00Z",
+    },
+    {
+        "VisitID": 5001,
+        "chief_complaint": "Chest pain",
+        "status": "waiting",
+        "assigned_bed": None,
+        "ArrivalTime": "2026-03-25T08:10:00Z",
+    },
+]
+
+DEFAULT_ACTIVE_ALERTS = [
+    {
+        "AlertID": 4002,
+        "VisitID": 5003,
+        "Type": "SpO2 critically low",
+        "severity": "critical",
+        "triggered_at": "2026-03-25T08:47:00Z",
+    },
+    {
+        "AlertID": 4001,
+        "VisitID": 5001,
+        "Type": "ESI Level 2 - Immediate attention required",
+        "severity": "warning",
+        "triggered_at": "2026-03-25T08:16:00Z",
+    },
+]
+
+DEFAULT_COLLECTION_COUNTS = {
+    "er_visits": 3,
+    "wait_time_logs": 6,
+    "alerts": 2,
+    "triages": 3,
+    "resources": 5,
+    "visit_resources": 3,
+}
+
+
 def module_e2_detail():
     st.markdown("Category E > ICU & Real-Time Monitoring > Module 26")
     st.markdown("# Emergency Room Patient Alert System")
@@ -84,6 +152,16 @@ def _home_tab():
         st.success("3️⃣ Resource Allocation Report (used / free)")
         st.success("4️⃣ Wait-Time & Throughput Dashboard")
         st.success("5️⃣ ER Crowding Index (NEDOCS score)")
+
+    st.divider()
+    st.markdown("### Default Inputs Used When External Feeds Are Missing")
+    colx, coly = st.columns(2)
+    with colx:
+        st.markdown("**From M25 (ICU Vital Signs) - Sample Payload**")
+        st.json(DEFAULT_EXTERNAL_INPUTS["M25_vital_signs"])
+    with coly:
+        st.markdown("**From ER Staff / Doctor - Sample Entry**")
+        st.json(DEFAULT_EXTERNAL_INPUTS["ER_patient_entry"])
 
     st.divider()
     st.markdown("### Live ER Metrics")
@@ -419,15 +497,19 @@ def _show_live_counts():
     try:
         for c in collections:
             counts[c] = _col(c).count_documents({})
+        if all(v == 0 for v in counts.values()):
+            st.info("Database is reachable but empty. Showing default demo counts.")
+            counts = DEFAULT_COLLECTION_COUNTS
         st.table({
             "Collection": list(counts.keys()),
             "Documents": list(counts.values()),
         })
     except Exception as e:
         st.warning(f"Could not reach MongoDB: {e}")
+        st.info("Showing default demo counts because live database is unavailable.")
         st.table({
-            "Collection": collections,
-            "Documents": ["—"] * len(collections),
+            "Collection": list(DEFAULT_COLLECTION_COUNTS.keys()),
+            "Documents": list(DEFAULT_COLLECTION_COUNTS.values()),
         })
 
 
@@ -809,9 +891,12 @@ def _output_tab():
             if visits:
                 st.json(visits)
             else:
-                st.info("No visits in database yet.")
+                st.info("No visits in database yet. Showing default demo visits.")
+                st.json(DEFAULT_ER_VISITS)
         except Exception as e:
             st.warning(f"MongoDB: {e}")
+            st.info("Showing default demo visits because live database is unavailable.")
+            st.json(DEFAULT_ER_VISITS)
 
     with col_live2:
         st.markdown("**Active Alerts**")
@@ -824,9 +909,12 @@ def _output_tab():
             if active_alerts:
                 st.json(active_alerts)
             else:
-                st.success("No active alerts.")
+                st.info("No active alerts in database. Showing default alert feed.")
+                st.json(DEFAULT_ACTIVE_ALERTS)
         except Exception as e:
             st.warning(f"MongoDB: {e}")
+            st.info("Showing default alert feed because live database is unavailable.")
+            st.json(DEFAULT_ACTIVE_ALERTS)
 
     st.divider()
 
@@ -834,10 +922,10 @@ def _output_tab():
     st.markdown("#### Register a New ER Visit (Demo)")
     with st.form("e2_new_visit"):
         f1, f2 = st.columns(2)
-        patient_id    = f1.number_input("Patient ID", min_value=1, step=1)
-        complaint     = f2.text_input("Chief Complaint")
-        triage_system = f1.selectbox("Triage System", ["ESI", "CTAS", "MTS"])
-        triage_score  = f2.slider("Triage Score (1=most urgent)", 1, 5, 3)
+        patient_id    = f1.number_input("Patient ID", min_value=1, step=1, value=1001)
+        complaint     = f2.text_input("Chief Complaint", value="Chest pain with shortness of breath")
+        triage_system = f1.selectbox("Triage System", ["ESI", "CTAS", "MTS"], index=0)
+        triage_score  = f2.slider("Triage Score (1=most urgent)", 1, 5, 2)
         submitted = st.form_submit_button("Submit Visit")
 
     if submitted and complaint:
