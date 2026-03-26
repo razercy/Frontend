@@ -5,10 +5,20 @@ from streamlit_option_menu import option_menu
 def sidebar(menu_items):
     with st.sidebar:
         st.markdown("## 🏥 MediCare")
+        default_icons = [
+            "activity", "flask", "capsule", "building", "credit-card",
+            "people", "shield", "truck", "bar-chart"
+        ]
+        # Keep icon list aligned with menu size to avoid index errors.
+        if len(default_icons) < len(menu_items):
+            icons = default_icons + ["circle"] * (len(menu_items) - len(default_icons))
+        else:
+            icons = default_icons[: len(menu_items)]
+
         selected = option_menu(
             "",
             menu_items,
-            icons=["activity", "flask", "capsule", "building", "credit-card", "people", "shield", "truck", "bar-chart"],
+            icons=icons,
             default_index=0
         )
 
