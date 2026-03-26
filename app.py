@@ -1,4 +1,12 @@
 import streamlit as st
+import sys
+from pathlib import Path
+
+# Allow direct execution from any working directory.
+PROJECT_ROOT = Path(__file__).resolve().parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from auth.login import login_page
 from auth.signup import signup_page
 from dashboards.patient_dashboard import patient_dashboard

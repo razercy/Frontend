@@ -1,5 +1,13 @@
 # dashboards/patient_dashboard.py
 import streamlit as st
+import sys
+from pathlib import Path
+
+# Allow direct execution (python dashboards/patient_dashboard.py).
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from components.sidebar import sidebar
 from components.charts import patient_line_chart, appointment_donut_chart
 from views.module_e2 import module_e2_detail

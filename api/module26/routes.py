@@ -27,6 +27,14 @@ REST endpoints mapping to the 5 DFD processes in backend_flow_diagram.dot
          GET    /export/m27-transfer Active critical alerts for M27
          GET    /export/m29-alerts   Active alerts for M29
 """
+import sys
+from pathlib import Path
+
+# Allow direct execution (python api/module26/routes.py) by adding project root.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 

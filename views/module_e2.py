@@ -8,8 +8,16 @@ Time Targets: Door-to-doctor, Door-to-disposition, Length of stay
 Features    : Crowding indices, Resource prediction, Flow optimization
 Backend     : MongoDB (via db.py)
 """
+import sys
+from pathlib import Path
 import streamlit as st
 from datetime import datetime, timezone
+
+# Allow direct execution (python views/module_e2.py) by adding project root.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from db import get_collection
 
 # ── collection handles ──────────────────────────────────────────────────────
@@ -1005,3 +1013,9 @@ def _output_tab():
         "Admitted": [2, 3, 4, 5, 3, 4, 4],
         "Avg LOS (min)": [185, 192, 198, 204, 188, 195, 201],
     })
+
+
+if __name__ == "__main__":
+    st.set_page_config(page_title="Module 26 - ER Alert", layout="wide")
+    st.session_state.setdefault("view", "module")
+    module_e2_detail()

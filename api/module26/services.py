@@ -8,8 +8,16 @@ Implements the 5 DFD processes:
   P26.5 — Generate Throughput Reports
 """
 from __future__ import annotations
+import sys
+from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from typing import Optional
+
+# Allow direct execution (python api/module26/services.py) by adding project root.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from db import get_collection
 
 
