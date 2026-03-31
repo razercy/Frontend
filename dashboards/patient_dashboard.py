@@ -157,15 +157,19 @@ def patient_dashboard():
         "I - Integrated Capstone Projects"
     ])
 
-    # Handle sidebar selection
-    if selected != "Dashboard" and selected in CATEGORIES:
-        st.session_state.selected_category = selected
-        st.session_state.view = "category"
-        st.session_state.selected_module = None
-    elif selected == "Dashboard":
+    # Handle sidebar selection without overriding module view on rerun.
+    if selected == "Dashboard":
         st.session_state.view = "main"
         st.session_state.selected_category = None
         st.session_state.selected_module = None
+    elif selected in CATEGORIES:
+        category_changed = st.session_state.selected_category != selected
+        if category_changed:
+            st.session_state.selected_category = selected
+            st.session_state.view = "category"
+            st.session_state.selected_module = None
+        elif st.session_state.view == "main":
+            st.session_state.view = "category"
 
     # ROUTER
     if st.session_state.view == "category":
