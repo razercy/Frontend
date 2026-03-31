@@ -5,6 +5,10 @@ from streamlit_option_menu import option_menu
 def sidebar(menu_items):
     with st.sidebar:
         st.markdown("## 🏥 MediCare")
+        persisted = st.session_state.get("sidebar_selected")
+        if persisted not in menu_items:
+            persisted = menu_items[0]
+
         default_icons = [
             "activity", "flask", "capsule", "building", "credit-card",
             "people", "shield", "truck", "bar-chart"
@@ -19,8 +23,10 @@ def sidebar(menu_items):
             "",
             menu_items,
             icons=icons,
-            default_index=0
+            default_index=menu_items.index(persisted),
+            key=f"app_sidebar_menu_{st.session_state.get('role', 'guest')}",
         )
+        st.session_state.sidebar_selected = selected
 
         st.divider()
         if st.button("Logout"):
@@ -30,6 +36,7 @@ def sidebar(menu_items):
             st.session_state.view = "main"
             st.session_state.selected_category = None
             st.session_state.selected_module = None
+            st.session_state.pop("sidebar_selected", None)
             st.rerun()
 
     return selected
