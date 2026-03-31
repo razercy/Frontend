@@ -102,9 +102,10 @@ def module_e2_detail():
     )
 
     tab = st.radio(
-        "",
+        "Module 26 Tabs",
         ["🏠 Home", "🔗 ER Diagram", "🗺️ DFD", "📋 Collections", "🔍 Query", "⚡ Triggers", "🔌 API", "📊 Output"],
         horizontal=True,
+        label_visibility="collapsed",
         key="e2_tabs",
     )
     st.divider()

@@ -369,7 +369,12 @@ def show_module_detail():
     st.markdown(f"*{desc}*")
     
     # Tabs
-    tab = st.radio("", ["🏠 Home", "🔗 ER Diagram", "📋 Tables", "🔍 SQL Query", "⚡ Triggers", "📊 Output"], horizontal=True)
+    tab = st.radio(
+        "Doctor Module Tabs",
+        ["🏠 Home", "🔗 ER Diagram", "📋 Tables", "🔍 SQL Query", "⚡ Triggers", "📊 Output"],
+        horizontal=True,
+        label_visibility="collapsed",
+    )
     st.divider()
     
     if tab == "🏠 Home":
